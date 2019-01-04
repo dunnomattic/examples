@@ -7,7 +7,7 @@ function encryptPassword(string $rawPass) : string {
 
 function checkPassword(string $rawPass, string $dbPassEncrypted) : bool {
     if (!empty($rawPass) && !empty($dbPassEncrypted)) {
-        return (/* redcacted */);
+        return (/* redacted */);
     }
     return false;
 }
