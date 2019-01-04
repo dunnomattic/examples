@@ -1,0 +1,261 @@
+{% extends "cr_base.html" %}
+{% block data_center %}{{ dc }}{% endblock %}
+{% block head %}
+{{ parent() }}
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+{% endblock %}
+
+{% block content %}
+
+<div id="wrapper">
+    <!-- Sidebar -->
+    {{ sidebar_content | raw }}
+    <div id="page-wrapper">
+        <div class="row">
+            <div id='display-alerts' class="col-lg-12">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <h1><small>Power Totals</small></h1>
+                <ol class="breadcrumb">
+                    <li><i class="fa fa-dashboard"></i><a href="dashboard.php"> Dashboard</a></li>
+                    <li class="fa"><a href="{{ dc }}.php">{{ dc|upper }}</a></li>
+                </ol>
+            </div>
+        </div><!-- /.row -->
+        <ul class="nav nav-tabs" role="tablist" id="myTab">
+            <li class="active"><a href="#overview" role="tab" data-toggle="tab">Overview</a></li>
+            <li><a href="#trends" role="tab" data-toggle="tab">Trends</a></li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade in active" id="overview">
+                <br>
+                <div class="row">
+                    <div class="col-lg-12">
+                        {% if totals_body %}
+                        {% for dc, dc_body in totals_body %}
+                        <div class="panel panel-primary">
+                            <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-flash"></i>{{ dc }} Electrical Totals</h3>
+                            </div>
+                            <div class="panel-body">
+                                <table class="table table-striped">
+                                    <thead>
+                                    <tr>
+                                        <th>Room Name</th>
+                                        {% for header in totals_headers %}
+                                        <th>{{ header }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for row in dc_body %}
+                                    <tr>
+                                        <td>{{ row.roomName }}</td>
+                                        {% for dataPoint in row.points %}
+                                        <td>{{ dataPoint.value }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% if device_names %}
+            <div class="tab-pane fade in" id="trends">
+                <br>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <form id="device_names">
+                            <div class="panel panel-primary">
+                                <div class="panel-heading"><h3 class="panel-title"><i></i>Custom Trends</h3>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="accordion">
+                                        {% for key, values in device_names %}
+                                        {% if values %}
+                                        <div class="panel panel-primary">
+                                            <div class="panel-heading accordion-heading"><h3 class="panel-title"><i></i><a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#{{ key }}" href="#{{ key }}">{{ key }}</a></h3>
+                                            </div>
+                                            <div id="{{ key }}" class="panel-body panel-collapse collapse out">
+                                                <input style="margin-right:4px;" type="checkbox" class="selectAll {{ key }}"/>Select All<br>
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                    <tr>
+                                                        {% if values|length > 3 %}
+                                                        <!--<th></th>-->
+                                                        <th>Device Name</th>
+                                                        <!--<th></th>-->
+                                                        <th>Device Name</th>
+                                                        <!--<th></th>-->
+                                                        <th>Device Name</th>
+                                                        <!--<th></th>-->
+                                                        <th>Device Name</th>
+                                                        {% else %}
+                                                        {% for i in 1..values|length %}
+                                                        <!--<th></th>-->
+                                                        <th>Device Name</th>
+                                                        {% endfor %}
+                                                        {% endif %}
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for row in values|batch(4) %}
+                                                    <tr>
+                                                        {% for column in row %}
+                                                        <!--<td></td>-->
+                                                        <td><input style="margin-right:4px;" type="checkbox" name="device_name[]" value="{{ column }}">{{ column }}</td>
+                                                        {% endfor %}
+                                                    </tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <p><span>Start Date: <input type="text" id="start_date"></span><span> End Date: <input type="text" id="end_date"></span></p>
+                            <button id="selected_trends_button">Generate Selected Trends</button>
+                            <button id="clear_trends_button">Clear All Trends</button>
+                        </form>
+                        <br />
+                        <div class="panel panel-primary">
+                            <div class="panel-heading"><h3 class="panel-title"><i></i>Trend Graphs</h3>
+                            </div>
+                            <div class="panel-body">
+                                <div class="accordion">
+                                    <div class="panel panel-primary">
+                                        <div class="panel-heading accordion-heading"><h3 class="panel-title"><i class="fa fa-flash"></i><a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#mango_trends" href="#collapse1">Electrical</a></h3>
+                                        </div>
+                                        <div id="collapse1" class="panel-body panel-collapse collapse out">
+                                            <div id="electricaltrenddata"></div>
+                                        </div>
+                                    </div>
+                                    <div class="panel panel-primary">
+                                        <div class="panel-heading accordion-heading"><h3 class="panel-title"><i class="fa fa-cogs"></i><a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#mango_trends" href="#collapse2">CRAHs</a></h3>
+                                        </div>
+                                        <div id="collapse2" class="panel-body panel-collapse collapse out">
+                                            <div id="crahtrenddata"></div>
+                                        </div>
+                                    </div>
+                                    <div class="panel panel-primary">
+                                        <div class="panel-heading accordion-heading"><h3 class="panel-title"><i class="fa fa-ticket"></i><a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#mango_trends" href="#collapse3">Environmentals</a></h3>
+                                        </div>
+                                        <div id="collapse3" class="panel-body panel-collapse collapse out">
+                                            <div id="envtrenddata"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+    {% endblock %}
+
+    {% block javascripts %}
+    {{ parent() }}
+    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+<script>
+
+    $(document).ready(function() {
+
+        var today = new Date();
+
+        $('#start_date').datepicker({
+            inline: true,
+            showOtherMonths: true,
+            dayNamesMin: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            dateFormat: 'mm/dd/yy',
+            minDate: '-1y'
+        });
+
+        $('#end_date').datepicker({
+            inline: true,
+            showOtherMonths: true,
+            dayNamesMin: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            dateFormat: 'mm/dd/yy',
+            maxDate: '+1d'
+        });
+
+        $("#end_date").datepicker('setDate', today);
+
+        var date2 = $('#end_date').datepicker('getDate', '+1d');
+        date2.setDate(date2.getDate()-31);
+
+        $("#start_date").datepicker('setDate', date2);
+
+        $("input.selectAll").change(function(){
+            $(this).parent().find('input').prop('checked', $(this).prop("checked"));
+        });
+
+        $('#selected_trends_button').click(function(e)
+        {
+            e.preventDefault();
+            var data = $('#device_names input:checkbox:checked').serializeArray();
+            data.push({name: 'dc', value: '{{ dc }}'});
+            data.push({name: 'start_date', value: $.datepicker.formatDate("yy-mm-dd", $("#start_date").datepicker("getDate"))});
+            data.push({name: 'end_date', value: $.datepicker.formatDate("yy-mm-dd", $("#end_date").datepicker("getDate"))});
+            $('#collapse1, #collapse2, #collapse3').collapse('show');
+            $('#selected_trends_button').html('Selected Trends loading. <i class="fa fa-spinner fa-spin"></i>');
+            $.ajax({
+                type: 'POST',
+                url: 'dc-trend.php', // consider security to make sure only logged in customer can access this and only this set of data
+                data: data
+            }).done(function (data) {
+                $('#electricaltrenddata, #crahtrenddata, #envtrenddata').empty();
+                devices = jQuery.parseJSON(data);
+                console.log(devices);
+                drawMangoTrend(devices);
+                $('.accordion-toggle').removeClass('collapsed');
+                $('#selected_trends_button').text('Generate Selected Trends');
+            });
+        });
+
+        $('#clear_trends_button').click(function (e) {
+            e.preventDefault();
+            $('#electricaltrenddata, #crahtrenddata, #envtrenddata').empty();
+            $('.accordion-toggle').addClass('collapsed');
+            $("#device_names input:checkbox").prop('checked', false);
+            $('#collapse1, #collapse2, #collapse3').addClass('collapse').removeClass('in');
+        });
+
+        $('#mango_trend_button').click(function (e) {
+            e.preventDefault();
+            $('#device_names input').prop('checked', true);
+            var data = $('#device_names input:checkbox:checked').serializeArray();
+            data.push({name: 'dc', value: '{{ dc }}'});
+            data.push({name: 'start_date', value: $.datepicker.formatDate("yy-mm-dd", $("#start_date").datepicker("getDate"))});
+            data.push({name: 'end_date', value: $.datepicker.formatDate("yy-mm-dd", $("#end_date").datepicker("getDate"))});
+            $('#collapse1, #collapse2, #collapse3').collapse('show');
+            $('#mango_trend_button').html('All Trends loading. <i class="fa fa-spinner fa-spin"></i>');
+            $.ajax({
+                type: 'POST',
+                url: 'dc-trend.php', // consider security to make sure only logged in customer can access this and only this set of data
+                data: data
+            }).done(function (data) {
+                $('#electricaltrenddata, #crahtrenddata, #envtrenddata').empty();
+                devices = jQuery.parseJSON(data);
+                drawMangoTrend(devices);
+                $('.accordion-toggle').removeClass('collapsed');
+                $('#mango_trend_button').text('Generate All Trends');
+            });
+
+        }); //mango trend click
+    });
+
+</script>
+    {% endblock %}
